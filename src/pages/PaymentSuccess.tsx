@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { subscriptionService } from '../services/subscriptionService';
 import { CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -10,6 +11,7 @@ const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
+  const authToken = searchParams.get('auth_token');
   const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
 
@@ -20,13 +22,23 @@ const PaymentSuccess = () => {
         return;
       }
 
-      // Vérifier/restaurer la session auth
-      if (!user) {
-        await checkUser();
-      }
-
       try {
+        // Restaurer la session si on a un token
+        if (authToken && !user) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: authToken,
+            refresh_token: authToken
+          });
+
+          if (setSessionError) {
+            throw setSessionError;
+          }
+
+          await checkUser();
+        }
+
         await subscriptionService.handlePaymentSuccess(sessionId);
+        await checkUser(); // Recharger les données utilisateur
         toast.success('Paiement validé avec succès !');
       } catch (error) {
         console.error('Erreur de paiement:', error);
@@ -38,7 +50,7 @@ const PaymentSuccess = () => {
     };
 
     init();
-  }, [sessionId, navigate, user, checkUser]);
+  }, [sessionId, authToken, navigate, user, checkUser]);
 
   if (isProcessing) {
     return <LoadingSpinner />;

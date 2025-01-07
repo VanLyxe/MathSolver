@@ -35,14 +35,12 @@ export const handler: Handler = async (event) => {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
         console.log('Subscription updated:', subscription.status);
         
-        // Mettre à jour immédiatement le statut de l'abonnement
         const { error } = await supabase
           .from('users')
           .update({
             subscription_type: subscription.status === 'active' ? 'premium' : 'free',
-            subscription_end_date: subscription.status === 'active' 
-              ? new Date(subscription.current_period_end * 1000).toISOString()
-              : null
+            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end
           })
           .eq('stripe_subscription_id', subscription.id);
 
@@ -57,13 +55,13 @@ export const handler: Handler = async (event) => {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
         console.log('Subscription deleted');
         
-        // Réinitialiser immédiatement l'abonnement
         const { error } = await supabase
           .from('users')
           .update({
             subscription_type: 'free',
             subscription_end_date: null,
-            stripe_subscription_id: null
+            stripe_subscription_id: null,
+            cancel_at_period_end: false
           })
           .eq('stripe_subscription_id', subscription.id);
 

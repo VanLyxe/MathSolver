@@ -1,6 +1,11 @@
+import { supabase } from '../lib/supabase';
+
 export const stripeService = {
   async createCheckoutSession(planId: string, userId: string) {
     try {
+      // Récupérer la session actuelle
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/.netlify/functions/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -9,7 +14,7 @@ export const stripeService = {
         body: JSON.stringify({
           planId,
           userId,
-          successUrl: `${window.location.origin}/payment-success`,
+          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&auth_token=${session?.access_token}`,
           cancelUrl: `${window.location.origin}/pricing`
         })
       });

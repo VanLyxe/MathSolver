@@ -2,10 +2,11 @@ import React from 'react';
 import { CreditCard } from 'lucide-react';
 import { SubscriptionInfo } from '../../types/subscription';
 import { formatDate } from '../../utils/date.utils';
+import toast from 'react-hot-toast';
 
 interface SubscriptionManagerProps {
   subscriptionInfo: SubscriptionInfo;
-  onManageSubscription: () => void;
+  onManageSubscription: () => Promise<void>;
 }
 
 const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
@@ -13,6 +14,18 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   onManageSubscription
 }) => {
   const isActive = subscriptionInfo.status === 'active';
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const handleManageClick = async () => {
+    setIsLoading(true);
+    try {
+      await onManageSubscription();
+    } catch (error) {
+      toast.error("Impossible d'accéder au portail de gestion");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
@@ -34,10 +47,11 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       </div>
       
       <button
-        onClick={onManageSubscription}
-        className="px-4 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+        onClick={handleManageClick}
+        disabled={isLoading}
+        className="px-4 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50"
       >
-        Gérer l'abonnement
+        {isLoading ? 'Chargement...' : 'Gérer l\'abonnement'}
       </button>
     </div>
   );

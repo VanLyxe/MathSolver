@@ -16,6 +16,28 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   const isActive = subscriptionInfo.status === 'active';
   const [isLoading, setIsLoading] = React.useState(false);
 
+  const getStatusText = () => {
+    if (isActive && !subscriptionInfo.cancelAtPeriodEnd) {
+      return 'Premium actif';
+    }
+    if (isActive && subscriptionInfo.cancelAtPeriodEnd) {
+      return 'Premium (annulé)';
+    }
+    return 'Inactif';
+  };
+
+  const getDateText = () => {
+    if (!subscriptionInfo.currentPeriodEnd) return null;
+    
+    if (isActive && !subscriptionInfo.cancelAtPeriodEnd) {
+      return `Prochain renouvellement le ${formatDate(subscriptionInfo.currentPeriodEnd)}`;
+    }
+    if (isActive && subscriptionInfo.cancelAtPeriodEnd) {
+      return `Se termine le ${formatDate(subscriptionInfo.currentPeriodEnd)}`;
+    }
+    return null;
+  };
+
   const handleManageClick = async () => {
     setIsLoading(true);
     try {
@@ -34,12 +56,12 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
         <div>
           <p className="text-sm text-gray-500">Statut de l'abonnement</p>
           <div className="flex items-center space-x-2">
-            <span className="font-medium">
-              {isActive ? 'Premium' : 'Inactif'}
+            <span className={`font-medium ${isActive && subscriptionInfo.cancelAtPeriodEnd ? 'text-orange-600' : ''}`}>
+              {getStatusText()}
             </span>
-            {subscriptionInfo.currentPeriodEnd && isActive && (
+            {subscriptionInfo.currentPeriodEnd && (
               <span className="text-sm text-gray-500">
-                (Prochain renouvellement le {formatDate(subscriptionInfo.currentPeriodEnd)})
+                ({getDateText()})
               </span>
             )}
           </div>

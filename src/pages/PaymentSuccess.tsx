@@ -1,59 +1,55 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { subscriptionService } from '../services/subscriptionService';
-import { CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const sessionId = searchParams.get('session_id');
   const authToken = searchParams.get('auth_token');
   const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const init = async () => {
-      if (!sessionId) {
-        navigate('/profile');
-        return;
-      }
-
       try {
         // Restaurer la session si on a un token
-        if (authToken && !user) {
-          const { error: setSessionError } = await supabase.auth.setSession({
+        if (authToken) {
+          const { data: { session }, error: sessionError } = await supabase.auth.setSession({
             access_token: authToken,
             refresh_token: authToken
           });
 
-          if (setSessionError) {
-            throw setSessionError;
+          if (sessionError) {
+            throw sessionError;
           }
 
-          await checkUser();
+          if (session) {
+            await checkUser();
+            toast.success('Paiement validé avec succès !');
+          }
         }
-
-        await subscriptionService.handlePaymentSuccess(sessionId);
-        await checkUser(); // Recharger les données utilisateur
-        toast.success('Paiement validé avec succès !');
       } catch (error) {
-        console.error('Erreur de paiement:', error);
+        console.error('Auth error:', error);
         toast.error('Erreur lors de la validation du paiement');
-        navigate('/profile');
       } finally {
         setIsProcessing(false);
       }
     };
 
     init();
-  }, [sessionId, authToken, navigate, user, checkUser]);
+  }, [authToken, checkUser]);
 
   if (isProcessing) {
     return <LoadingSpinner />;
+  }
+
+  if (!user) {
+    navigate('/auth');
+    return null;
   }
 
   return (

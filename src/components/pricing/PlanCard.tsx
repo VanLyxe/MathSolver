@@ -28,9 +28,19 @@ const PlanCard: React.FC<PlanProps> = ({
   const PlanIcon = highlight ? Star : period ? Infinity : Zap;
   const iconColor = highlight ? "text-purple-500" : period ? "text-blue-500" : "text-yellow-500";
 
+  // Vérifier si c'est un abonnement et si l'utilisateur est déjà abonné
+  const isPremiumPlan = period !== undefined;
+  const isUserPremium = user?.subscription_type === 'premium';
+  const isDisabled = isPremiumPlan && isUserPremium;
+
   const handleClick = async () => {
     if (!user) {
       navigate('/auth');
+      return;
+    }
+
+    if (isDisabled) {
+      toast.error('Vous êtes déjà abonné à ce plan');
       return;
     }
 
@@ -79,14 +89,17 @@ const PlanCard: React.FC<PlanProps> = ({
 
       <button
         onClick={handleClick}
+        disabled={isDisabled}
         className={`w-full flex items-center justify-center px-4 py-3 rounded-xl text-white font-medium transition-all ${
-          highlight
-            ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90'
-            : 'bg-gray-900 hover:bg-gray-800'
+          isDisabled
+            ? 'bg-gray-300 cursor-not-allowed'
+            : highlight
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90'
+              : 'bg-gray-900 hover:bg-gray-800'
         }`}
       >
-        Choisir cette offre
-        <ArrowRight className="ml-2 h-4 w-4" />
+        {isDisabled ? 'Déjà abonné' : 'Choisir cette offre'}
+        {!isDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
       </button>
     </div>
   );

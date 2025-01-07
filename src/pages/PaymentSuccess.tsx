@@ -9,39 +9,68 @@ import toast from 'react-hot-toast';
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const authToken = searchParams.get('auth_token');
+  const sessionId = searchParams.get('session_id');
   const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       try {
-        // Restaurer la session si on a un token
-        if (authToken) {
-          const { data: { session }, error: sessionError } = await supabase.auth.setSession({
-            access_token: authToken,
-            refresh_token: authToken
-          });
+        // Récupérer la session depuis l'URL
+        const authToken = searchParams.get('auth_token');
+        if (!authToken) {
+          throw new Error('Token d\'authentification manquant');
+        }
 
-          if (sessionError) {
-            throw sessionError;
-          }
+        // Restaurer la session
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: authToken,
+          refresh_token: authToken
+        });
 
-          if (session) {
-            await checkUser();
-            toast.success('Paiement validé avec succès !');
-          }
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        // Recharger les données utilisateur
+        await checkUser();
+
+        // Valider le paiement une fois authentifié
+        if (sessionId) {
+          await handlePaymentValidation(sessionId);
         }
       } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Auth/Payment error:', error);
         toast.error('Erreur lors de la validation du paiement');
+        navigate('/auth');
       } finally {
         setIsProcessing(false);
       }
     };
 
     init();
-  }, [authToken, checkUser]);
+  }, [sessionId, checkUser, navigate, searchParams]);
+
+  const handlePaymentValidation = async (sid: string) => {
+    try {
+      const response = await fetch('/.netlify/functions/stripe-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId: sid })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la validation du paiement');
+      }
+
+      toast.success('Paiement validé avec succès !');
+    } catch (error) {
+      console.error('Payment validation error:', error);
+      throw error;
+    }
+  };
 
   if (isProcessing) {
     return <LoadingSpinner />;

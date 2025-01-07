@@ -4,17 +4,15 @@ import { SubscriptionInfo } from '../types/subscription';
 export const subscriptionService = {
   async getCustomerPortalUrl(userId: string): Promise<string> {
     try {
-      const { data: userData, error } = await supabase
+      const { data: user, error: userError } = await supabase
         .from('users')
         .select('stripe_customer_id')
         .eq('id', userId)
         .single();
 
-      if (error || !userData?.stripe_customer_id) {
+      if (userError || !user?.stripe_customer_id) {
         throw new Error('Client Stripe non trouvé');
       }
-
-      const returnUrl = `${window.location.origin}/subscription-update`;
 
       const response = await fetch('/.netlify/functions/create-customer-portal', {
         method: 'POST',
@@ -22,13 +20,13 @@ export const subscriptionService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          customerId: userData.stripe_customer_id,
-          returnUrl
+          customerId: user.stripe_customer_id,
+          returnUrl: `${window.location.origin}/subscription-update`
         })
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la création du portail client');
+        throw new Error('Erreur lors de la création de la session du portail');
       }
 
       const { url } = await response.json();
@@ -43,7 +41,7 @@ export const subscriptionService = {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('subscription_type, subscription_end_date, stripe_subscription_id')
+        .select('subscription_type, subscription_end_date, stripe_subscription_id, cancel_at_period_end')
         .eq('id', userId)
         .single();
 
@@ -52,7 +50,7 @@ export const subscriptionService = {
       return {
         status: data.subscription_type === 'premium' ? 'active' : 'canceled',
         currentPeriodEnd: data.subscription_end_date,
-        cancelAtPeriodEnd: false,
+        cancelAtPeriodEnd: data.cancel_at_period_end || false,
         subscriptionId: data.stripe_subscription_id
       };
     } catch (error) {
@@ -62,16 +60,22 @@ export const subscriptionService = {
   },
 
   async handlePaymentSuccess(sessionId: string): Promise<void> {
-    const response = await fetch('/.netlify/functions/stripe-webhook', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sessionId })
-    });
+    try {
+      const response = await fetch('/.netlify/functions/stripe-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId })
+      });
 
-    if (!response.ok) {
-      throw new Error('Erreur lors de la validation du paiement');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de la validation du paiement');
+      }
+    } catch (error) {
+      console.error('Payment validation error:', error);
+      throw error;
     }
   }
 };

@@ -15,32 +15,42 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     const init = async () => {
+      console.log('Starting PaymentSuccess initialization...');
       try {
         // Récupérer la session depuis l'URL
         const authToken = searchParams.get('auth_token');
+        console.log('Auth token from URL:', authToken ? 'Present' : 'Missing');
+        
         if (!authToken) {
           throw new Error('Token d\'authentification manquant');
         }
 
         // Restaurer la session
-        const { error: sessionError } = await supabase.auth.setSession({
+        console.log('Attempting to restore session...');
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
           access_token: authToken,
           refresh_token: authToken
         });
 
         if (sessionError) {
+          console.error('Session restoration error:', sessionError);
           throw sessionError;
         }
+        console.log('Session restored successfully:', sessionData.session ? 'Valid' : 'Invalid');
 
         // Recharger les données utilisateur
+        console.log('Reloading user data...');
         await checkUser();
+        console.log('User data reloaded:', user ? 'Success' : 'Failed');
 
         // Valider le paiement une fois authentifié
         if (sessionId) {
+          console.log('Processing payment validation...');
           await handlePaymentValidation(sessionId);
+          console.log('Payment validation completed');
         }
       } catch (error) {
-        console.error('Auth/Payment error:', error);
+        console.error('Detailed error in init:', error);
         toast.error('Erreur lors de la validation du paiement');
         navigate('/auth');
       } finally {
@@ -52,6 +62,7 @@ const PaymentSuccess = () => {
   }, [sessionId, checkUser, navigate, searchParams]);
 
   const handlePaymentValidation = async (sid: string) => {
+    console.log('Starting payment validation for session:', sid);
     try {
       const response = await fetch('/.netlify/functions/stripe-webhook', {
         method: 'POST',
@@ -61,13 +72,17 @@ const PaymentSuccess = () => {
         body: JSON.stringify({ sessionId: sid })
       });
 
+      console.log('Webhook response status:', response.status);
+      const responseData = await response.json();
+      console.log('Webhook response data:', responseData);
+
       if (!response.ok) {
         throw new Error('Erreur lors de la validation du paiement');
       }
 
       toast.success('Paiement validé avec succès !');
     } catch (error) {
-      console.error('Payment validation error:', error);
+      console.error('Detailed payment validation error:', error);
       throw error;
     }
   };
@@ -77,6 +92,7 @@ const PaymentSuccess = () => {
   }
 
   if (!user) {
+    console.log('No user found after processing, redirecting to auth...');
     navigate('/auth');
     return null;
   }

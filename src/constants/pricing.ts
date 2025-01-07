@@ -1,6 +1,6 @@
 export const PAYMENT_PLANS = [
   {
-    name: "Pack Découverte",
+    name: "Pack Exercice",
     price: "2.99€",
     tokens: 5,
     description: "Idéal pour tester le service",

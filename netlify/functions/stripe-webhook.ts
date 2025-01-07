@@ -28,6 +28,8 @@ export const handler: Handler = async (event) => {
       process.env.STRIPE_WEBHOOK_SECRET || ''
     );
 
+    console.log('Webhook event received:', stripeEvent.type);
+
     switch (stripeEvent.type) {
       case 'checkout.session.completed': {
         const session = stripeEvent.data.object as Stripe.Checkout.Session;
@@ -36,7 +38,6 @@ export const handler: Handler = async (event) => {
         const subscriptionId = session.subscription as string;
 
         if (userId) {
-          // Récupérer d'abord le nombre actuel de tokens
           const { data: userData } = await supabase
             .from('users')
             .select('tokens_remaining')
@@ -45,7 +46,6 @@ export const handler: Handler = async (event) => {
 
           const currentTokens = userData?.tokens_remaining || 0;
           
-          // Mettre à jour avec le nombre actuel + 20 tokens
           await supabase
             .from('users')
             .update({
@@ -62,9 +62,11 @@ export const handler: Handler = async (event) => {
         break;
       }
 
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
+      case 'customer.subscription.updated': {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
+        console.log('Subscription updated:', subscription.status);
+        
+        // Mettre à jour le statut de l'abonnement
         await supabase
           .from('users')
           .update({
@@ -76,11 +78,30 @@ export const handler: Handler = async (event) => {
           .eq('stripe_subscription_id', subscription.id);
         break;
       }
+
+      case 'customer.subscription.deleted': {
+        const subscription = stripeEvent.data.object as Stripe.Subscription;
+        console.log('Subscription deleted');
+        
+        // Réinitialiser complètement l'abonnement
+        await supabase
+          .from('users')
+          .update({
+            subscription_type: 'free',
+            subscription_end_date: null,
+            stripe_subscription_id: null
+          })
+          .eq('stripe_subscription_id', subscription.id);
+        break;
+      }
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ received: true })
+      body: JSON.stringify({ 
+        received: true,
+        type: stripeEvent.type
+      })
     };
   } catch (err) {
     console.error('Webhook Error:', err);

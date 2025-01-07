@@ -1,8 +1,15 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
 
+// Initialiser Stripe avec la clé secrète et la configuration
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2022-11-15',
+  appInfo: {
+    name: 'MathSolver',
+    version: '1.0.0'
+  },
+  typescript: true,
+  maxNetworkRetries: 2,
 });
 
 export const handler: Handler = async (event) => {
@@ -48,43 +55,56 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Créer la session du portail
-    try {
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl,
-      });
+    // Créer la configuration du portail client
+    const configuration = await stripe.billingPortal.configurations.create({
+      business_profile: {
+        headline: 'MathSolver - Gestion de votre abonnement',
+        privacy_policy_url: 'https://mathsolver.fr/legal/privacy',
+        terms_of_service_url: 'https://mathsolver.fr/legal/terms'
+      },
+      features: {
+        subscription_cancel: {
+          enabled: true,
+          mode: 'at_period_end',
+          cancellation_reason: {
+            enabled: true,
+            options: ['too_expensive', 'missing_features', 'unused', 'other']
+          }
+        },
+        subscription_pause: {
+          enabled: false
+        },
+        payment_method_update: {
+          enabled: true
+        },
+        customer_update: {
+          enabled: true,
+          allowed_updates: ['email']
+        }
+      }
+    });
 
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: session.url })
-      };
-    } catch (stripeError: any) {
-      console.error('Stripe error:', stripeError);
-      
-      // Gérer les erreurs Stripe spécifiques
-      return {
-        statusCode: stripeError.statusCode || 500,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          error: 'Stripe error',
-          details: stripeError.message,
-          type: stripeError.type,
-          code: stripeError.code
-        })
-      };
-    }
-  } catch (error: any) {
-    // Gérer les erreurs générales
-    console.error('General error:', error);
-    
+    // Créer la session du portail avec la configuration
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+      configuration: configuration.id
+    });
+
     return {
-      statusCode: 500,
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: session.url })
+    };
+  } catch (error: any) {
+    console.error('Portal error:', error);
+    return {
+      statusCode: error.statusCode || 500,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message
+        error: error.message,
+        type: error.type,
+        code: error.code
       })
     };
   }

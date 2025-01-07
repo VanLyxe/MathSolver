@@ -3,21 +3,39 @@ import { SubscriptionInfo } from '../types/subscription';
 
 export const subscriptionService = {
   async getCustomerPortalUrl(userId: string): Promise<string> {
-    const { data: customer, error } = await supabase
-      .from('stripe_customers')
-      .select('customer_id')
-      .eq('user_id', userId)
-      .single();
+    try {
+      // Récupérer le stripe_customer_id de l'utilisateur
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('stripe_customer_id')
+        .eq('id', userId)
+        .single();
 
-    if (error || !customer) {
-      throw new Error('Client Stripe non trouvé');
+      if (error || !userData?.stripe_customer_id) {
+        throw new Error('Client Stripe non trouvé');
+      }
+
+      const response = await fetch('/.netlify/functions/create-customer-portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId: userData.stripe_customer_id,
+          returnUrl: `${window.location.origin}/profile`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création du portail client');
+      }
+
+      const { url } = await response.json();
+      return url;
+    } catch (error) {
+      console.error('Error getting customer portal URL:', error);
+      throw error;
     }
-
-    // URL de redirection après paiement
-    const returnUrl = `${window.location.origin}/profile`;
-
-    // Dans un environnement de production, cette URL devrait être générée via l'API Stripe
-    return `https://billing.stripe.com/p/login/${customer.customer_id}?return_url=${encodeURIComponent(returnUrl)}`;
   },
 
   async getSubscriptionInfo(userId: string): Promise<SubscriptionInfo | null> {

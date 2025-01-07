@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 });
 
 const PLAN_PRICES = {
-  'pack-decouverte': {
+  'pack-exercice': {
     priceId: 'price_1QeBv0GKrVOWzXyunyprcNJp',
     mode: 'payment'
   },
@@ -30,11 +30,11 @@ export const handler: Handler = async (event) => {
 
   try {
     const { planId, userId, successUrl, cancelUrl } = JSON.parse(event.body || '');
-    
+
     // Log pour déboguer
     console.log('Received planId:', planId);
     console.log('Available plans:', Object.keys(PLAN_PRICES));
-    
+
     if (!planId || !userId || !successUrl || !cancelUrl) {
       throw new Error('Missing required parameters');
     }
@@ -48,7 +48,7 @@ export const handler: Handler = async (event) => {
     console.log('Selected plan:', plan);
 
     const session = await stripe.checkout.sessions.create({
-      mode: plan.mode,
+      mode: plan.mode as 'payment' | 'subscription',
       payment_method_types: ['card'],
       line_items: [{
         price: plan.priceId,
@@ -61,17 +61,17 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ url: session.url }),
+      body: JSON.stringify({ url: session.url })
     };
-  } catch (error) {
-    console.error('Checkout error:', error);
+  } catch (error: any) {
+    console.error('Error:', error);
     return {
       statusCode: 400,
       body: JSON.stringify({ 
         error: error.message,
-        details: error.stack,
-        received: event.body // Ajouter le body reçu pour déboguer
-      }),
+        type: error.type,
+        code: error.code
+      })
     };
   }
 };

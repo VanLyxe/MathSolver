@@ -6,9 +6,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 });
 
 const PLAN_PRICES = {
-  'pack-decouverte': 'price_1QeBv0GKrVOWzXyunyprcNJp',
-  'pack-populaire': 'price_1QeBwjGKrVOWzXyur8Zg068m',
-  'abonnement-premium': 'price_1QeByYGKrVOWzXyuWKQIV4gf'
+  'pack-decouverte': {
+    priceId: 'price_1QeBv0GKrVOWzXyunyprcNJp',
+    mode: 'payment'
+  },
+  'pack-populaire': {
+    priceId: 'price_1QeBwjGKrVOWzXyur8Zg068m',
+    mode: 'payment'
+  },
+  'abonnement-premium': {
+    priceId: 'price_1QeByYGKrVOWzXyuWKQIV4gf',
+    mode: 'subscription'
+  }
 };
 
 export const handler: Handler = async (event) => {
@@ -26,16 +35,16 @@ export const handler: Handler = async (event) => {
       throw new Error('Missing required parameters');
     }
 
-    const priceId = PLAN_PRICES[planId];
-    if (!priceId) {
+    const plan = PLAN_PRICES[planId];
+    if (!plan) {
       throw new Error('Invalid plan');
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: planId === 'abonnement-premium' ? 'subscription' : 'payment',
+      mode: plan.mode,
       payment_method_types: ['card'],
       line_items: [{
-        price: priceId,
+        price: plan.priceId,
         quantity: 1
       }],
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
@@ -48,9 +57,13 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ url: session.url }),
     };
   } catch (error) {
+    console.error('Checkout error:', error);
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ 
+        error: error.message,
+        details: error.stack
+      }),
     };
   }
 };

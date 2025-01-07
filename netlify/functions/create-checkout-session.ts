@@ -31,14 +31,21 @@ export const handler: Handler = async (event) => {
   try {
     const { planId, userId, successUrl, cancelUrl } = JSON.parse(event.body || '');
     
+    // Log pour déboguer
+    console.log('Received planId:', planId);
+    console.log('Available plans:', Object.keys(PLAN_PRICES));
+    
     if (!planId || !userId || !successUrl || !cancelUrl) {
       throw new Error('Missing required parameters');
     }
 
     const plan = PLAN_PRICES[planId];
     if (!plan) {
-      throw new Error('Invalid plan');
+      throw new Error(`Invalid plan: ${planId}`);
     }
+
+    // Log pour déboguer
+    console.log('Selected plan:', plan);
 
     const session = await stripe.checkout.sessions.create({
       mode: plan.mode,
@@ -62,7 +69,8 @@ export const handler: Handler = async (event) => {
       statusCode: 400,
       body: JSON.stringify({ 
         error: error.message,
-        details: error.stack
+        details: error.stack,
+        received: event.body // Ajouter le body reçu pour déboguer
       }),
     };
   }

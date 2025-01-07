@@ -12,49 +12,56 @@ const PaymentSuccess = () => {
   const sessionId = searchParams.get('session_id');
   const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
-      console.log('Starting PaymentSuccess initialization...');
+      // Afficher un message visible dans l'UI
+      setError('Initialisation...');
+      
       try {
-        // Récupérer la session depuis l'URL
         const authToken = searchParams.get('auth_token');
-        console.log('Auth token from URL:', authToken ? 'Present' : 'Missing');
-        
+        setError(`Auth token: ${authToken ? 'présent' : 'manquant'}`);
+
         if (!authToken) {
           throw new Error('Token d\'authentification manquant');
         }
 
-        // Restaurer la session
-        console.log('Attempting to restore session...');
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        // Restaurer la session avec le token
+        const { data: { session }, error: sessionError } = await supabase.auth.setSession({
           access_token: authToken,
           refresh_token: authToken
         });
 
         if (sessionError) {
-          console.error('Session restoration error:', sessionError);
+          setError(`Erreur session: ${sessionError.message}`);
           throw sessionError;
         }
-        console.log('Session restored successfully:', sessionData.session ? 'Valid' : 'Invalid');
 
-        // Recharger les données utilisateur
-        console.log('Reloading user data...');
-        await checkUser();
-        console.log('User data reloaded:', user ? 'Success' : 'Failed');
-
-        // Valider le paiement une fois authentifié
-        if (sessionId) {
-          console.log('Processing payment validation...');
-          await handlePaymentValidation(sessionId);
-          console.log('Payment validation completed');
+        if (!session) {
+          setError('Session invalide après restauration');
+          throw new Error('Session invalide');
         }
-      } catch (error) {
-        console.error('Detailed error in init:', error);
-        toast.error('Erreur lors de la validation du paiement');
-        navigate('/auth');
-      } finally {
+
+        setError('Session restaurée, chargement utilisateur...');
+        await checkUser();
+
+        if (!sessionId) {
+          setError('ID de session Stripe manquant');
+          throw new Error('ID de session Stripe manquant');
+        }
+
+        setError('Validation du paiement...');
+        await handlePaymentValidation(sessionId);
+        
+        setError(null);
         setIsProcessing(false);
+
+      } catch (error: any) {
+        setError(`Erreur finale: ${error.message}`);
+        console.error('Payment success error:', error);
+        toast.error('Erreur lors de la validation du paiement');
+        setTimeout(() => navigate('/auth'), 3000);
       }
     };
 
@@ -62,39 +69,41 @@ const PaymentSuccess = () => {
   }, [sessionId, checkUser, navigate, searchParams]);
 
   const handlePaymentValidation = async (sid: string) => {
-    console.log('Starting payment validation for session:', sid);
-    try {
-      const response = await fetch('/.netlify/functions/stripe-webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sessionId: sid })
-      });
+    const response = await fetch('/.netlify/functions/stripe-webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sid })
+    });
 
-      console.log('Webhook response status:', response.status);
-      const responseData = await response.json();
-      console.log('Webhook response data:', responseData);
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la validation du paiement');
-      }
-
-      toast.success('Paiement validé avec succès !');
-    } catch (error) {
-      console.error('Detailed payment validation error:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error('Erreur validation paiement');
     }
+
+    toast.success('Paiement validé avec succès !');
   };
 
   if (isProcessing) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <LoadingSpinner />
+        {error && (
+          <div className="mt-4 text-red-600 text-center">
+            {error}
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (!user) {
-    console.log('No user found after processing, redirecting to auth...');
-    navigate('/auth');
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Session expirée, redirection...</p>
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
   }
 
   return (

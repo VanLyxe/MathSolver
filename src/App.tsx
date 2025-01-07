@@ -23,6 +23,7 @@ import BreadcrumbSchema from './components/BreadcrumbSchema';
 import LocalBusiness from './components/LocalBusiness';
 import { setupPerformanceOptimizations } from './utils/performance.utils';
 import SEOProvider from './components/SEOProvider';
+import SubscriptionUpdate from './pages/SubscriptionUpdate';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -57,6 +58,7 @@ const App: React.FC = () => {
                   <Route path="/legal/cookies" element={<CookiesPolicy />} />
                   <Route path="/help/faq" element={<FAQ />} />
                   <Route path="/help/contact" element={<Contact />} />
+                  <Route path="/subscription-update" element={<SubscriptionUpdate />} />
                   <Route
                     path="/profile"
                     element={

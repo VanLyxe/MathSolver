@@ -28,7 +28,6 @@ const PlanCard: React.FC<PlanProps> = ({
   const PlanIcon = highlight ? Star : period ? Infinity : Zap;
   const iconColor = highlight ? "text-purple-500" : period ? "text-blue-500" : "text-yellow-500";
 
-  // Vérifier si c'est un abonnement et si l'utilisateur est déjà abonné
   const isPremiumPlan = period !== undefined;
   const isUserPremium = user?.subscription_type === 'premium';
   const isDisabled = isPremiumPlan && isUserPremium;
@@ -45,8 +44,16 @@ const PlanCard: React.FC<PlanProps> = ({
     }
 
     try {
-      const planId = name.toLowerCase().replace(/\s+/g, '-');
-      onSelect(planId);
+      // Normaliser le planId en retirant les accents
+      const planId = name.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '-');
+      
+      const url = await onSelect(planId);
+      if (url) {
+        window.location.href = url;
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Une erreur est survenue lors de la redirection vers le paiement');

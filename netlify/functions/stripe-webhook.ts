@@ -36,13 +36,23 @@ export const handler: Handler = async (event) => {
         const subscriptionId = session.subscription as string;
 
         if (userId) {
+          // Récupérer d'abord le nombre actuel de tokens
+          const { data: userData } = await supabase
+            .from('users')
+            .select('tokens_remaining')
+            .eq('id', userId)
+            .single();
+
+          const currentTokens = userData?.tokens_remaining || 0;
+          
+          // Mettre à jour avec le nombre actuel + 20 tokens
           await supabase
             .from('users')
             .update({
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               subscription_type: 'premium',
-              tokens_remaining: 20,
+              tokens_remaining: currentTokens + 20,
               subscription_end_date: new Date(
                 (session.subscription_end || Date.now() + 30 * 24 * 60 * 60 * 1000)
               ).toISOString()

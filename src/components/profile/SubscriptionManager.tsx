@@ -24,9 +24,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             <span className="font-medium">
               {isActive ? 'Premium' : 'Inactif'}
             </span>
-            {subscriptionInfo.currentPeriodEnd && (
+            {subscriptionInfo.currentPeriodEnd && isActive && (
               <span className="text-sm text-gray-500">
-                (jusqu'au {formatDate(subscriptionInfo.currentPeriodEnd)})
+                (Prochain renouvellement le {formatDate(subscriptionInfo.currentPeriodEnd)})
               </span>
             )}
           </div>

@@ -1,21 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { subscriptionService } from '../services/subscriptionService';
 import { CheckCircle } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
+import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
+  const { user, checkUser } = useAuthStore();
+  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
-    if (!sessionId) {
-      navigate('/profile');
-      return;
-    }
+    const init = async () => {
+      if (!sessionId) {
+        navigate('/profile');
+        return;
+      }
 
-    const handlePayment = async () => {
+      // Vérifier/restaurer la session auth
+      if (!user) {
+        await checkUser();
+      }
+
       try {
         await subscriptionService.handlePaymentSuccess(sessionId);
         toast.success('Paiement validé avec succès !');
@@ -23,11 +32,17 @@ const PaymentSuccess = () => {
         console.error('Erreur de paiement:', error);
         toast.error('Erreur lors de la validation du paiement');
         navigate('/profile');
+      } finally {
+        setIsProcessing(false);
       }
     };
 
-    handlePayment();
-  }, [sessionId, navigate]);
+    init();
+  }, [sessionId, navigate, user, checkUser]);
+
+  if (isProcessing) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { subscriptionService } from '../services/subscriptionService';
 import { supabase } from '../lib/supabase';
@@ -7,15 +7,14 @@ import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Récupérer les paramètres avec useSearchParams
-  const sessionId = searchParams.get('session_id');
-  const authToken = searchParams.get('auth_token');
+  // Récupérer les paramètres avec split()
+  const sessionId = window.location.href.split('session_id=')[1]?.split('&')[0];
+  const authToken = window.location.href.split('auth_token=')[1]?.split('?')[0];
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {

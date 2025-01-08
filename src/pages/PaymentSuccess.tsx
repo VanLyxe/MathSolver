@@ -11,8 +11,9 @@ const PaymentSuccess = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Extraire le sessionId de l'URL
+  // Récupérer les paramètres de l'URL avec split
   const sessionId = window.location.href.split('session_id=')[1]?.split('&')[0];
+  const planId = window.location.href.split('plan_id=')[1]?.split('&')[0];
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {
@@ -29,17 +30,19 @@ const PaymentSuccess = () => {
         await checkUser();
         
         if (!user?.id) {
-          addDebugInfo('Utilisateur non connecté, redirection vers la page de connexion');
-          navigate('/auth');
+          addDebugInfo('Utilisateur non connecté');
+          setError('Utilisateur non connecté');
           return;
         }
 
         addDebugInfo('Début du traitement du paiement');
-        await subscriptionService.handlePaymentSuccess(user.id);
+        await subscriptionService.handlePaymentSuccess(user.id, planId);
         addDebugInfo('Paiement traité avec succès');
         
         setIsProcessing(false);
-        toast.success('Abonnement activé avec succès !');
+        toast.success(planId?.includes('premium') ? 
+          'Abonnement premium activé avec succès !' : 
+          'Tokens ajoutés avec succès !');
         
         // Recharger les données utilisateur
         await checkUser();
@@ -54,7 +57,7 @@ const PaymentSuccess = () => {
     };
 
     handlePayment();
-  }, [sessionId, user, checkUser, navigate]);
+  }, [sessionId, planId, user, checkUser, navigate]);
 
   return (
     <div className="min-h-screen p-8">
@@ -63,6 +66,7 @@ const PaymentSuccess = () => {
         
         <div className="bg-gray-100 p-4 rounded-lg mb-4">
           <p>Session ID: {sessionId || 'Non trouvé'}</p>
+          <p>Plan: {planId || 'Non spécifié'}</p>
           <p>État: {isProcessing ? 'En cours...' : 'Terminé'}</p>
           {error && <p className="text-red-500">Erreur: {error}</p>}
         </div>

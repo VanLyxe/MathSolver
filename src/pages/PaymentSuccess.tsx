@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { subscriptionService } from '../services/subscriptionService';
-import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
@@ -12,9 +11,8 @@ const PaymentSuccess = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Extraire les paramètres de l'URL
+  // Extraire le sessionId de l'URL
   const sessionId = window.location.href.split('session_id=')[1]?.split('&')[0];
-  const authToken = window.location.href.split('auth_token=')[1]?.split('&')[0];
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {
@@ -23,22 +21,17 @@ const PaymentSuccess = () => {
 
     const handlePayment = async () => {
       try {
-        if (authToken) {
-          addDebugInfo('Auth token trouvé, initialisation de la session');
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: authToken,
-            refresh_token: authToken
-          });
-
-          if (sessionError) {
-            throw new Error('Erreur d\'authentification: ' + sessionError.message);
-          }
+        if (!sessionId) {
+          throw new Error('Session ID non trouvé');
         }
 
+        // Vérifier si l'utilisateur est connecté
         await checkUser();
-
+        
         if (!user?.id) {
-          throw new Error('Utilisateur non connecté');
+          addDebugInfo('Utilisateur non connecté, redirection vers la page de connexion');
+          navigate('/auth');
+          return;
         }
 
         addDebugInfo('Début du traitement du paiement');
@@ -47,6 +40,9 @@ const PaymentSuccess = () => {
         
         setIsProcessing(false);
         toast.success('Abonnement activé avec succès !');
+        
+        // Recharger les données utilisateur
+        await checkUser();
         
         setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err) {
@@ -58,7 +54,7 @@ const PaymentSuccess = () => {
     };
 
     handlePayment();
-  }, [sessionId, authToken, user, checkUser, navigate]);
+  }, [sessionId, user, checkUser, navigate]);
 
   return (
     <div className="min-h-screen p-8">
@@ -83,13 +79,13 @@ const PaymentSuccess = () => {
         <div className="flex gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             Dashboard
           </button>
           <button
             onClick={() => navigate('/profile')}
-            className="px-4 py-2 bg-gray-500 text-white rounded"
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
           >
             Profile
           </button>

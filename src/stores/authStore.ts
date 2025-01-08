@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       const { data: userData, error: dbError } = await supabase
         .from('users')
-        .select('subscription_type')
+        .select('subscription_type, tokens_remaining')
         .eq('id', session.user.id)
         .single();
 
@@ -41,7 +41,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       const enrichedUser = {
         ...session.user,
-        subscription_type: userData?.subscription_type
+        subscription_type: userData?.subscription_type,
+        tokens_remaining: userData?.tokens_remaining
       };
 
       set({ user: enrichedUser, loading: false });
@@ -59,8 +60,22 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       if (error) throw error;
-      await authService.getUser(data.user.id);
-      set({ user: data.user });
+
+      const { data: userData, error: dbError } = await supabase
+        .from('users')
+        .select('subscription_type, tokens_remaining')
+        .eq('id', data.user.id)
+        .single();
+
+      if (dbError) throw dbError;
+
+      const enrichedUser = {
+        ...data.user,
+        subscription_type: userData?.subscription_type,
+        tokens_remaining: userData?.tokens_remaining
+      };
+
+      set({ user: enrichedUser });
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -90,7 +105,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       set({ user: null });
-      toast.success('Déconnexion réussie');
+      window.location.href = '/auth'; // Force la redirection
     } catch (error) {
       console.error('Sign out error:', error);
       toast.error('Erreur lors de la déconnexion');

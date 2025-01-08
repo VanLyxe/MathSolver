@@ -24,18 +24,22 @@ const PaymentSuccess = () => {
     const initAuth = async () => {
       if (authToken) {
         addDebugInfo('Auth token trouvé, initialisation de la session');
-        const { error } = await supabase.auth.setSession({
+        
+        // Utiliser uniquement le access_token
+        const { data: { session }, error } = await supabase.auth.setSession({
           access_token: authToken,
-          refresh_token: authToken
+          refresh_token: '' // On ne définit pas de refresh_token
         });
 
         if (error) {
           addDebugInfo(`Erreur d'authentification: ${error.message}`);
-          return;
+          // On continue même en cas d'erreur d'auth
         }
 
-        await checkUser();
-        addDebugInfo('Session initialisée');
+        if (session) {
+          await checkUser();
+          addDebugInfo('Session initialisée avec succès');
+        }
       }
     };
 
@@ -69,12 +73,8 @@ const PaymentSuccess = () => {
       addDebugInfo(`User authenticated: ${!!user}`);
       addDebugInfo(`Session ID: ${sessionId}`);
 
-      if (user) {
-        addDebugInfo('Utilisateur connecté, lancement du traitement');
-        await handlePayment();
-      } else {
-        addDebugInfo('Utilisateur non connecté');
-      }
+      // On continue même si l'utilisateur n'est pas connecté
+      await handlePayment();
     };
 
     init();
@@ -87,7 +87,6 @@ const PaymentSuccess = () => {
         
         <div className="bg-gray-100 p-4 rounded-lg mb-4">
           <p>Session ID: {sessionId || 'Non trouvé'}</p>
-          <p>Auth: {authToken || 'Non trouvé'}</p>
           <p>État: {isProcessing ? 'En cours...' : 'Terminé'}</p>
           {error && <p className="text-red-500">Erreur: {error}</p>}
         </div>

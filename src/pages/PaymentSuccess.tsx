@@ -11,9 +11,10 @@ const PaymentSuccess = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Récupérer les paramètres de l'URL avec split
-  const sessionId = window.location.href.split('session_id=')[1]?.split('&')[0];
-  const planId = window.location.href.split('plan_id=')[1]?.split('&')[0];
+  // Utiliser URLSearchParams pour parser l'URL correctement
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('session_id')?.split('?')[0]; // Enlever tout ce qui suit un éventuel "?"
+  const planId = urlParams.get('plan_id')?.split('?')[0]; // Enlever tout ce qui suit un éventuel "?"
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {

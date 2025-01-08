@@ -14,7 +14,7 @@ export const stripeService = {
         body: JSON.stringify({
           planId,
           userId,
-          successUrl: `${window.location.origin}/payment-success?auth_token=${session?.access_token}`,
+          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&plan_id=${planId}`,
           cancelUrl: `${window.location.origin}/pricing`
         })
       });

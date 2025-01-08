@@ -46,6 +46,8 @@ const PaymentSuccess = () => {
         <div className="bg-gray-100 p-4 rounded-lg mb-4">
           <p>Session ID: {sessionId || 'Non trouvé'}</p>
           <p>État: {isProcessing ? 'En cours...' : 'Terminé'}</p>
+          <p>Session ID reel: {sessionId}</p>
+          <p>user: {user}</p>
           {error && <p className="text-red-500">Erreur: {error}</p>}
         </div>
 

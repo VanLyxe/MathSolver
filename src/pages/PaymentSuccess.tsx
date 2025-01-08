@@ -12,7 +12,9 @@ const PaymentSuccess = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
+  // Extraire les paramètres de l'URL
   const sessionId = window.location.href.split('session_id=')[1]?.split('&')[0];
+  const authToken = window.location.href.split('auth_token=')[1]?.split('&')[0];
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {
@@ -20,28 +22,32 @@ const PaymentSuccess = () => {
     };
 
     const handlePayment = async () => {
-      if (!user?.id) {
-        addDebugInfo('Utilisateur non connecté');
-        setError('Utilisateur non connecté');
-        setIsProcessing(false);
-        return;
-      }
-
       try {
-        if (!sessionId) {
-          throw new Error('Session ID manquant');
-        }
-        addDebugInfo('Début du traitement du paiement');
+        if (authToken) {
+          addDebugInfo('Auth token trouvé, initialisation de la session');
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: authToken,
+            refresh_token: authToken
+          });
 
+          if (sessionError) {
+            throw new Error('Erreur d\'authentification: ' + sessionError.message);
+          }
+        }
+
+        await checkUser();
+
+        if (!user?.id) {
+          throw new Error('Utilisateur non connecté');
+        }
+
+        addDebugInfo('Début du traitement du paiement');
         await subscriptionService.handlePaymentSuccess(user.id);
         addDebugInfo('Paiement traité avec succès');
         
-        // Recharger les données utilisateur
-        await checkUser();
         setIsProcessing(false);
         toast.success('Abonnement activé avec succès !');
         
-        // Redirection après un court délai
         setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err) {
         console.error('Erreur:', err);
@@ -52,7 +58,7 @@ const PaymentSuccess = () => {
     };
 
     handlePayment();
-  }, [sessionId, user, checkUser, navigate]);
+  }, [sessionId, authToken, user, checkUser, navigate]);
 
   return (
     <div className="min-h-screen p-8">

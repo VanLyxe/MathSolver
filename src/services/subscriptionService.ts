@@ -59,16 +59,46 @@ export const subscriptionService = {
     }
   },
 
-  async handlePaymentSuccess(userId: string): Promise<void> {
+  async handlePaymentSuccess(userId: string, planId?: string): Promise<void> {
     try {
-      // Mettre à jour directement via Supabase
+      // Récupérer d'abord les tokens actuels
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('tokens_remaining')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      let updateData: any = {};
+      const currentTokens = userData?.tokens_remaining || 0;
+
+      // Déterminer le type de plan et mettre à jour en conséquence
+      switch (planId) {
+        case 'pack-exercice':
+          updateData = {
+            tokens_remaining: currentTokens + 5
+          };
+          break;
+        case 'pack-populaire':
+          updateData = {
+            tokens_remaining: currentTokens + 10
+          };
+          break;
+        case 'abonnement-premium':
+          updateData = {
+            subscription_type: 'premium',
+            subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            tokens_remaining: currentTokens + 20
+          };
+          break;
+        default:
+          throw new Error('Plan non reconnu');
+      }
+
       const { error: updateError } = await supabase
         .from('users')
-        .update({
-          subscription_type: 'premium',
-          subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 jours
-          tokens_remaining: 20 // Créditer les tokens pour l'abonnement premium
-        })
+        .update(updateData)
         .eq('id', userId);
 
       if (updateError) {

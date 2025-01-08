@@ -1,29 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthStore } from '../stores/authStore';
 import { subscriptionService } from '../services/subscriptionService';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const { user, requireAuth } = useAuth();
+  const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Extraire le session ID de l'URL en prenant en compte le auth_token
-  const url = window.location.href;
-  const sessionId = url.split('session_id=')[1]?.split('&')[0];
+  // Extraire le session ID et auth token de l'URL
+  const url = new URL(window.location.href);
+  const sessionId = url.searchParams.get('session_id');
+  const authToken = url.searchParams.get('auth_token');
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {
-      setDebugInfo(prev => [...prev, info]);
+      setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${info}`]);
     };
 
-    // S'assurer que l'utilisateur est authentifié
-    requireAuth();
-    addDebugInfo(`User authenticated: ${!!user}`);
-    addDebugInfo(`Session ID: ${sessionId}`);
+    const initAuth = async () => {
+      if (authToken) {
+        addDebugInfo('Auth token trouvé, initialisation de la session');
+        const { error } = await supabase.auth.setSession({
+          access_token: authToken,
+          refresh_token: authToken
+        });
+
+        if (error) {
+          addDebugInfo(`Erreur d'authentification: ${error.message}`);
+          return;
+        }
+
+        await checkUser();
+        addDebugInfo('Session initialisée');
+      }
+    };
 
     const handlePayment = async () => {
       try {
@@ -35,7 +50,13 @@ const PaymentSuccess = () => {
         await subscriptionService.handlePaymentSuccess(sessionId);
         addDebugInfo('Paiement traité avec succès');
         toast.success('Paiement traité avec succès');
+        
+        // Recharger les données utilisateur
+        await checkUser();
         setIsProcessing(false);
+        
+        // Redirection après un court délai
+        setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err) {
         console.error('Erreur:', err);
         addDebugInfo(`Erreur: ${err.message}`);
@@ -44,13 +65,21 @@ const PaymentSuccess = () => {
       }
     };
 
-    if (user) {
-      addDebugInfo('Utilisateur connecté, lancement du traitement');
-      handlePayment();
-    } else {
-      addDebugInfo('Utilisateur non connecté');
-    }
-  }, [sessionId, user, requireAuth]);
+    const init = async () => {
+      await initAuth();
+      addDebugInfo(`User authenticated: ${!!user}`);
+      addDebugInfo(`Session ID: ${sessionId}`);
+
+      if (user) {
+        addDebugInfo('Utilisateur connecté, lancement du traitement');
+        await handlePayment();
+      } else {
+        addDebugInfo('Utilisateur non connecté');
+      }
+    };
+
+    init();
+  }, [sessionId, authToken, user, checkUser, navigate]);
 
   return (
     <div className="min-h-screen p-8">
@@ -65,9 +94,11 @@ const PaymentSuccess = () => {
 
         <div className="bg-gray-800 text-white p-4 rounded-lg mb-4 font-mono text-sm">
           <h2 className="text-lg font-bold mb-2">Debug Info:</h2>
-          {debugInfo.map((info, index) => (
-            <p key={index}>{info}</p>
-          ))}
+          <div className="space-y-1 text-xs">
+            {debugInfo.map((info, index) => (
+              <p key={index}>{info}</p>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-4">

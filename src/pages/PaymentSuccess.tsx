@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { subscriptionService } from '../services/subscriptionService';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import DebugInfo from '../components/DebugInfo';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
@@ -11,9 +11,46 @@ const PaymentSuccess = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Extraire le session_id de l'URL complète
+  // Extraire les tokens de l'URL
   const rawUrl = window.location.href;
   const sessionId = rawUrl.split('session_id=').pop();
+  const authToken = rawUrl.split('auth_token=')[1]?.split('?')[0];
+
+  useEffect(() => {
+    const handlePayment = async () => {
+      try {
+        // 1. Authentifier l'utilisateur avec le token
+        if (authToken) {
+          const { error: authError } = await supabase.auth.setSession({
+            access_token: authToken,
+            refresh_token: ''
+          });
+
+          if (authError) {
+            throw new Error('Erreur d\'authentification');
+          }
+
+          // Recharger les données utilisateur
+          await checkUser();
+        }
+
+        // 2. Traiter le paiement avec Stripe
+        if (sessionId) {
+          await subscriptionService.handlePaymentSuccess(sessionId);
+          toast.success('Paiement traité avec succès');
+          setIsProcessing(false);
+        } else {
+          throw new Error('Session ID manquant');
+        }
+      } catch (err) {
+        console.error('Erreur:', err);
+        setError(err.message);
+        setIsProcessing(false);
+      }
+    };
+
+    handlePayment();
+  }, [authToken, sessionId, checkUser]);
 
   return (
     <div className="min-h-screen p-8">
@@ -25,6 +62,7 @@ const PaymentSuccess = () => {
             <p className="font-semibold">Informations de débogage:</p>
             <p className="break-all text-sm">URL complète: {rawUrl}</p>
             <p className="break-all text-sm">Session ID extrait: {sessionId}</p>
+            <p className="break-all text-sm">Auth Token extrait: {authToken}</p>
           </div>
           
           <div>

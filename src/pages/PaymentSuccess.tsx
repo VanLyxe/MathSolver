@@ -12,51 +12,34 @@ const PaymentSuccess = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Récupérer les paramètres avec split()
   const sessionId = window.location.href.split('session_id=')[1]?.split('&')[0];
-  const authToken = window.location.href.split('auth_token=')[1]?.split('?')[0];
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {
       setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${info}`]);
     };
 
-    const initAuth = async () => {
-      if (authToken) {
-        addDebugInfo('Auth token trouvé, initialisation de la session');
-        
-        // Utiliser uniquement le access_token
-        const { data: { session }, error } = await supabase.auth.setSession({
-          access_token: authToken,
-          refresh_token: '' // On ne définit pas de refresh_token
-        });
-
-        if (error) {
-          addDebugInfo(`Erreur d'authentification: ${error.message}`);
-          // On continue même en cas d'erreur d'auth
-        }
-
-        if (session) {
-          await checkUser();
-          addDebugInfo('Session initialisée avec succès');
-        }
-      }
-    };
-
     const handlePayment = async () => {
+      if (!user?.id) {
+        addDebugInfo('Utilisateur non connecté');
+        setError('Utilisateur non connecté');
+        setIsProcessing(false);
+        return;
+      }
+
       try {
         if (!sessionId) {
           throw new Error('Session ID manquant');
         }
         addDebugInfo('Début du traitement du paiement');
 
-        await subscriptionService.handlePaymentSuccess(sessionId);
+        await subscriptionService.handlePaymentSuccess(user.id);
         addDebugInfo('Paiement traité avec succès');
-        toast.success('Paiement traité avec succès');
         
         // Recharger les données utilisateur
         await checkUser();
         setIsProcessing(false);
+        toast.success('Abonnement activé avec succès !');
         
         // Redirection après un court délai
         setTimeout(() => navigate('/dashboard'), 2000);
@@ -68,17 +51,8 @@ const PaymentSuccess = () => {
       }
     };
 
-    const init = async () => {
-      await initAuth();
-      addDebugInfo(`User authenticated: ${!!user}`);
-      addDebugInfo(`Session ID: ${sessionId}`);
-
-      // On continue même si l'utilisateur n'est pas connecté
-      await handlePayment();
-    };
-
-    init();
-  }, [sessionId, authToken, user, checkUser, navigate]);
+    handlePayment();
+  }, [sessionId, user, checkUser, navigate]);
 
   return (
     <div className="min-h-screen p-8">

@@ -10,6 +10,7 @@ import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
+import PaymentSuccess from './pages/PaymentSuccess';
 import LegalMentions from './pages/legal/LegalMentions';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import Terms from './pages/legal/Terms';
@@ -23,17 +24,11 @@ import BreadcrumbSchema from './components/BreadcrumbSchema';
 import LocalBusiness from './components/LocalBusiness';
 import { setupPerformanceOptimizations } from './utils/performance.utils';
 import SEOProvider from './components/SEOProvider';
-import SubscriptionUpdate from './pages/SubscriptionUpdate';
 
 const App: React.FC = () => {
   useEffect(() => {
     const { lazyLoadImages, preloadCriticalAssets } = setupPerformanceOptimizations();
-    
-    preloadCriticalAssets([
-      '/fonts/inter-var.woff2',
-      '/css/critical.css'
-    ]);
-
+    preloadCriticalAssets(['/fonts/inter-var.woff2', '/css/critical.css']);
     lazyLoadImages();
   }, []);
 
@@ -52,13 +47,13 @@ const App: React.FC = () => {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/legal/mentions" element={<LegalMentions />} />
                   <Route path="/legal/privacy" element={<PrivacyPolicy />} />
                   <Route path="/legal/terms" element={<Terms />} />
                   <Route path="/legal/cookies" element={<CookiesPolicy />} />
                   <Route path="/help/faq" element={<FAQ />} />
                   <Route path="/help/contact" element={<Contact />} />
-                  <Route path="/subscription-update" element={<SubscriptionUpdate />} />
                   <Route
                     path="/profile"
                     element={

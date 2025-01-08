@@ -10,8 +10,9 @@ const PaymentSuccess = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Extraire le session ID de l'URL
-  const sessionId = new URL(window.location.href).searchParams.get('session_id');
+  // Extraire le session ID de l'URL en prenant en compte le auth_token
+  const url = window.location.href;
+  const sessionId = url.split('session_id=')[1]?.split('&')[0];
 
   useEffect(() => {
     // S'assurer que l'utilisateur est authentifié
@@ -46,8 +47,6 @@ const PaymentSuccess = () => {
         <div className="bg-gray-100 p-4 rounded-lg mb-4">
           <p>Session ID: {sessionId || 'Non trouvé'}</p>
           <p>État: {isProcessing ? 'En cours...' : 'Terminé'}</p>
-          <p>Session ID reel: {sessionId}</p>
-          <p>user: {user}</p>
           {error && <p className="text-red-500">Erreur: {error}</p>}
         </div>
 

@@ -66,12 +66,24 @@ export const subscriptionService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ 
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: sessionId
+            }
+          }
+        })
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erreur lors de la validation du paiement');
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Erreur lors de la validation du paiement');
+      }
+
+      const data = await response.json();
+      if (!data.received) {
+        throw new Error('La validation du paiement a échoué');
       }
     } catch (error) {
       console.error('Payment validation error:', error);

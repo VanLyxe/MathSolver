@@ -59,31 +59,20 @@ export const subscriptionService = {
     }
   },
 
-  async handlePaymentSuccess(sessionId: string): Promise<void> {
+  async handlePaymentSuccess(userId: string): Promise<void> {
     try {
-      const response = await fetch('/.netlify/functions/stripe-webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          type: 'checkout.session.completed',
-          data: {
-            object: {
-              id: sessionId
-            }
-          }
+      // Mettre à jour directement via Supabase
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          subscription_type: 'premium',
+          subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 jours
+          tokens_remaining: 20 // Créditer les tokens pour l'abonnement premium
         })
-      });
+        .eq('id', userId);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Erreur lors de la validation du paiement');
-      }
-
-      const data = await response.json();
-      if (!data.received) {
-        throw new Error('La validation du paiement a échoué');
+      if (updateError) {
+        throw new Error('Erreur lors de la mise à jour de l\'abonnement');
       }
     } catch (error) {
       console.error('Payment validation error:', error);

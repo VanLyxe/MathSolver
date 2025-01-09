@@ -15,6 +15,7 @@ import SubscriptionUpdate from './pages/SubscriptionUpdate';
 import LegalMentions from './pages/legal/LegalMentions';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import Terms from './pages/legal/Terms';
+import TermsOfSale from './pages/legal/TermsOfSale';
 import CookiesPolicy from './pages/legal/CookiesPolicy';
 import FAQ from './pages/help/FAQ';
 import Contact from './pages/help/Contact';
@@ -53,6 +54,7 @@ const App: React.FC = () => {
                   <Route path="/legal/mentions" element={<LegalMentions />} />
                   <Route path="/legal/privacy" element={<PrivacyPolicy />} />
                   <Route path="/legal/terms" element={<Terms />} />
+                  <Route path="/legal/terms-of-sale" element={<TermsOfSale />} />
                   <Route path="/legal/cookies" element={<CookiesPolicy />} />
                   <Route path="/help/faq" element={<FAQ />} />
                   <Route path="/help/contact" element={<Contact />} />

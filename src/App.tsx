@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
 import PaymentSuccess from './pages/PaymentSuccess';
+import SubscriptionUpdate from './pages/SubscriptionUpdate';
 import LegalMentions from './pages/legal/LegalMentions';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import Terms from './pages/legal/Terms';
@@ -48,6 +49,7 @@ const App: React.FC = () => {
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
+                  <Route path="/subscription-update" element={<SubscriptionUpdate />} />
                   <Route path="/legal/mentions" element={<LegalMentions />} />
                   <Route path="/legal/privacy" element={<PrivacyPolicy />} />
                   <Route path="/legal/terms" element={<Terms />} />

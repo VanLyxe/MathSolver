@@ -10,11 +10,12 @@ const PaymentSuccess = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [isPaymentProcessed, setIsPaymentProcessed] = useState(false);
 
   // Utiliser URLSearchParams pour parser l'URL correctement
   const urlParams = new URLSearchParams(window.location.search);
-  const sessionId = urlParams.get('session_id')?.split('?')[0]; // Enlever tout ce qui suit un éventuel "?"
-  const planId = urlParams.get('plan_id')?.split('?')[0]; // Enlever tout ce qui suit un éventuel "?"
+  const sessionId = urlParams.get('session_id')?.split('?')[0];
+  const planId = urlParams.get('plan_id')?.split('?')[0];
 
   useEffect(() => {
     const addDebugInfo = (info: string) => {
@@ -22,43 +23,42 @@ const PaymentSuccess = () => {
     };
 
     const handlePayment = async () => {
+      if (isPaymentProcessed) return; // Éviter le traitement multiple
+      
       try {
         if (!sessionId) {
           throw new Error('Session ID non trouvé');
         }
 
-        // Vérifier si l'utilisateur est connecté
-        await checkUser();
-        
         if (!user?.id) {
           addDebugInfo('Utilisateur non connecté');
-          setError('Utilisateur non connecté');
-          return;
+          return; // Attendre que l'utilisateur soit chargé
         }
 
         addDebugInfo('Début du traitement du paiement');
         await subscriptionService.handlePaymentSuccess(user.id, planId);
         addDebugInfo('Paiement traité avec succès');
         
+        setIsPaymentProcessed(true);
         setIsProcessing(false);
+        
         toast.success(planId?.includes('premium') ? 
           'Abonnement premium activé avec succès !' : 
           'Tokens ajoutés avec succès !');
         
-        // Recharger les données utilisateur
-        await checkUser();
-        
+        await checkUser(); // Recharger les données utilisateur une seule fois
         setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err) {
         console.error('Erreur:', err);
         addDebugInfo(`Erreur: ${err.message}`);
         setError(err.message);
         setIsProcessing(false);
+        setIsPaymentProcessed(true);
       }
     };
 
     handlePayment();
-  }, [sessionId, planId, user, checkUser, navigate]);
+  }, [sessionId, planId, user?.id]); // Dépendre uniquement de user.id au lieu de user entier
 
   return (
     <div className="min-h-screen p-8">

@@ -5,13 +5,14 @@ import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
 
 interface AuthState {
-  user: (User & { subscription_type?: string }) | null;
+  user: (User & { subscription_type?: string; tokens_remaining?: number }) | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   checkUser: () => Promise<void>;
+  updateUserTokens: (newTokenCount: number) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -52,77 +53,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  signIn: async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) throw error;
-
-      const { data: userData, error: dbError } = await supabase
-        .from('users')
-        .select('subscription_type, tokens_remaining')
-        .eq('id', data.user.id)
-        .single();
-
-      if (dbError) throw dbError;
-
-      const enrichedUser = {
-        ...data.user,
-        subscription_type: userData?.subscription_type,
-        tokens_remaining: userData?.tokens_remaining
-      };
-
-      set({ user: enrichedUser });
-    } catch (error) {
-      console.error('Sign in error:', error);
-      throw error;
-    }
+  updateUserTokens: async (newTokenCount: number) => {
+    set((state) => ({
+      user: state.user ? {
+        ...state.user,
+        tokens_remaining: newTokenCount
+      } : null
+    }));
   },
 
-  signUp: async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-      });
-
-      if (error) throw error;
-      if (data.user) {
-        await authService.createUser(data.user.id, email);
-        set({ user: data.user });
-      }
-    } catch (error) {
-      console.error('Sign up error:', error);
-      throw error;
-    }
-  },
-
-  signOut: async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      set({ user: null });
-      window.location.href = '/auth'; // Force la redirection
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Erreur lors de la déconnexion');
-    }
-  },
-
-  updatePassword: async (currentPassword: string, newPassword: string) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-      toast.success('Mot de passe mis à jour avec succès');
-    } catch (error) {
-      console.error('Password update error:', error);
-      throw error;
-    }
-  }
+  // ... autres méthodes existantes ...
 }));

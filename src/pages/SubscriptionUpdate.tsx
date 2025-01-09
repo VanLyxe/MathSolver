@@ -18,7 +18,50 @@ const SubscriptionUpdate = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const authToken = urlParams.get('auth_token');
 
-        if (authToken) {
+        if (authToken) {import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+import { supabase } from '../lib/supabase';
+import { Loader } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const SubscriptionUpdate = () => {
+  const navigate = useNavigate();
+  const { checkUser } = useAuthStore();
+
+  const handleAuthentication = async () => {
+    // Vérifier d'abord le token dans l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const authTokenWithParams = urlParams.get('auth_token');
+    const authToken = authTokenWithParams?.split('?')[0]; // Extraire le token sans les paramètres supplémentaires
+
+    if (authToken) {
+      try {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: authToken,
+          refresh_token: ''
+        });
+        
+        if (error) throw error;
+        if (data.session) {
+          await checkUser();
+          return true;
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+        return false;
+      }
+    }
+
+    // Vérifier la session existante si pas de token
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
+  };
+
+  // ... reste du code inchangé ...
+};
+
+export default SubscriptionUpdate;
           // Si on a un token dans l'URL, on l'utilise pour la session
           const { data, error } = await supabase.auth.setSession({
             access_token: authToken,

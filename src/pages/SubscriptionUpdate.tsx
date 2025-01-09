@@ -14,26 +14,44 @@ const SubscriptionUpdate = () => {
 
     const handleUpdate = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
+        // Vérifier d'abord le token dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const authToken = urlParams.get('auth_token');
 
-          if (accessToken && refreshToken) {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken
-            });
-            
-            if (error) throw error;
-            if (data.session) {
+        if (authToken) {
+          // Si on a un token dans l'URL, on l'utilise pour la session
+          const { data, error } = await supabase.auth.setSession({
+            access_token: authToken,
+            refresh_token: ''
+          });
+          
+          if (error) throw error;
+          if (data.session) {
+            await checkUser();
+          }
+        } else {
+          // Sinon, on vérifie la session existante
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session) {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+
+            if (accessToken && refreshToken) {
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+              });
+              
+              if (error) throw error;
+              if (data.session) {
+                await checkUser();
+              }
+            } else {
+              await supabase.auth.refreshSession();
               await checkUser();
             }
-          } else {
-            await supabase.auth.refreshSession();
-            await checkUser();
           }
         }
 

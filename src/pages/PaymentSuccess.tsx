@@ -10,114 +10,138 @@ const PaymentSuccess = () => {
   const { user, checkUser } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
-  const [isPaymentProcessed, setIsPaymentProcessed] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
 
   const urlParams = new URLSearchParams(window.location.search);
   const sessionId = urlParams.get('session_id')?.split('?')[0];
   const planId = urlParams.get('plan_id')?.split('?')[0];
 
-  const addDebugInfo = (info: string) => {
-    setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${info}`]);
+  const addLog = (message: string) => {
+    console.log(message); // Pour le débogage console
+    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
-  // Effet pour la réauthentification automatique
   useEffect(() => {
-    const autoAuth = async () => {
+    let mounted = true;
+
+    const initializePayment = async () => {
+      if (!mounted) return;
+      
       try {
+        addLog('Initialisation du processus de paiement');
+        
+        // Vérifier la session
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          addDebugInfo('Session expirée, tentative de réauthentification...');
-          // Récupérer et restaurer la session
+          addLog('Pas de session active, tentative de restauration...');
           await supabase.auth.refreshSession();
           await checkUser();
         }
-      } catch (err) {
-        console.error('Auth error:', err);
-        addDebugInfo('Erreur d\'authentification');
-        navigate('/auth');
-      }
-    };
 
-    autoAuth();
-  }, []);
-
-  // Effet pour le traitement du paiement
-  useEffect(() => {
-    const handlePayment = async () => {
-      if (isPaymentProcessed) return;
-      
-      try {
-        if (!sessionId) {
-          throw new Error('Session ID non trouvé');
+        // Vérifier les paramètres
+        if (!sessionId || !planId) {
+          throw new Error('Paramètres manquants');
         }
+        addLog(`Session ID: ${sessionId}`);
+        addLog(`Plan: ${planId}`);
 
+        // Vérifier l'utilisateur
         if (!user?.id) {
-          addDebugInfo('Utilisateur non connecté');
+          addLog('Utilisateur non connecté');
           return;
         }
+        addLog('Utilisateur connecté');
 
-        addDebugInfo('Début du traitement du paiement');
+        // Traiter le paiement
+        addLog('Traitement du paiement...');
         await subscriptionService.handlePaymentSuccess(user.id, planId);
-        addDebugInfo('Paiement traité avec succès');
         
-        setIsPaymentProcessed(true);
-        setIsProcessing(false);
-        
-        toast.success(planId?.includes('premium') ? 
-          'Abonnement premium activé avec succès !' : 
-          'Tokens ajoutés avec succès !');
-        
+        // Mettre à jour l'utilisateur
+        addLog('Mise à jour des informations utilisateur');
         await checkUser();
-        setTimeout(() => navigate('/dashboard'), 2000);
-      } catch (err) {
-        console.error('Erreur:', err);
-        addDebugInfo(`Erreur: ${err.message}`);
-        setError(err.message);
+
+        // Succès
+        addLog('Paiement traité avec succès');
         setIsProcessing(false);
-        setIsPaymentProcessed(true);
+        toast.success('Paiement effectué avec succès !');
+        
+        // Redirection
+        setTimeout(() => {
+          if (mounted) {
+            navigate('/dashboard');
+          }
+        }, 2000);
+
+      } catch (err: any) {
+        if (!mounted) return;
+        
+        const errorMessage = err.message || 'Une erreur est survenue';
+        addLog(`Erreur: ${errorMessage}`);
+        setError(errorMessage);
+        setIsProcessing(false);
       }
     };
 
-    if (user?.id) {
-      handlePayment();
-    }
-  }, [sessionId, planId, user?.id]);
+    initializePayment();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Traitement du paiement</h1>
-        
-        <div className="bg-gray-100 p-4 rounded-lg mb-4">
-          <p>Session ID: {sessionId || 'Non trouvé'}</p>
-          <p>Plan: {planId || 'Non spécifié'}</p>
-          <p>État: {isProcessing ? 'En cours...' : 'Terminé'}</p>
-          {error && <p className="text-red-500">Erreur: {error}</p>}
-        </div>
-
-        <div className="bg-gray-800 text-white p-4 rounded-lg mb-4 font-mono text-sm">
-          <h2 className="text-lg font-bold mb-2">Debug Info:</h2>
-          <div className="space-y-1 text-xs">
-            {debugInfo.map((info, index) => (
-              <p key={index}>{info}</p>
-            ))}
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Traitement du paiement
+            </h1>
           </div>
-        </div>
 
-        <div className="flex gap-4">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => navigate('/profile')}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-          >
-            Profile
-          </button>
+          <div className="px-6 py-4">
+            <div className="space-y-4">
+              {/* Informations de base */}
+              <div className="bg-gray-50 rounded p-4">
+                <p><strong>Session ID:</strong> {sessionId || 'Non trouvé'}</p>
+                <p><strong>Plan:</strong> {planId || 'Non spécifié'}</p>
+                <p><strong>État:</strong> {isProcessing ? 'En cours...' : 'Terminé'}</p>
+                {error && (
+                  <p className="text-red-600 mt-2">
+                    <strong>Erreur:</strong> {error}
+                  </p>
+                )}
+              </div>
+
+              {/* Logs */}
+              <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+                <h2 className="text-white text-sm font-semibold mb-2">Logs:</h2>
+                <div className="space-y-1">
+                  {logs.map((log, index) => (
+                    <p key={index} className="text-gray-300 text-xs">
+                      {log}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+                >
+                  Profile
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

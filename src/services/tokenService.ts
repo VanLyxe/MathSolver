@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { TokenError } from '../types/errors';
+import { useAuthStore } from '../stores/authStore';
 
 export class TokenService {
   async getUserTokens(userId: string): Promise<number> {
@@ -38,6 +39,10 @@ export class TokenService {
       if (data === 0) {
         throw new TokenError('NO_TOKENS', 'Plus de tokens disponibles');
       }
+
+      // Mettre à jour le store avec le nouveau nombre de tokens
+      const { updateUserTokens } = useAuthStore.getState();
+      await updateUserTokens(currentTokens - 1);
     } catch (error) {
       if (error instanceof TokenError) throw error;
       throw new TokenError('UNKNOWN_ERROR', 'Une erreur inattendue est survenue');

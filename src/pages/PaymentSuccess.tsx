@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { subscriptionService } from '../services/subscriptionService';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
@@ -12,18 +13,39 @@ const PaymentSuccess = () => {
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [isPaymentProcessed, setIsPaymentProcessed] = useState(false);
 
-  // Utiliser URLSearchParams pour parser l'URL correctement
   const urlParams = new URLSearchParams(window.location.search);
   const sessionId = urlParams.get('session_id')?.split('?')[0];
   const planId = urlParams.get('plan_id')?.split('?')[0];
 
+  const addDebugInfo = (info: string) => {
+    setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${info}`]);
+  };
+
+  // Effet pour la réauthentification automatique
   useEffect(() => {
-    const addDebugInfo = (info: string) => {
-      setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${info}`]);
+    const autoAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          addDebugInfo('Session expirée, tentative de réauthentification...');
+          // Récupérer et restaurer la session
+          await supabase.auth.refreshSession();
+          await checkUser();
+        }
+      } catch (err) {
+        console.error('Auth error:', err);
+        addDebugInfo('Erreur d\'authentification');
+        navigate('/auth');
+      }
     };
 
+    autoAuth();
+  }, []);
+
+  // Effet pour le traitement du paiement
+  useEffect(() => {
     const handlePayment = async () => {
-      if (isPaymentProcessed) return; // Éviter le traitement multiple
+      if (isPaymentProcessed) return;
       
       try {
         if (!sessionId) {
@@ -32,7 +54,7 @@ const PaymentSuccess = () => {
 
         if (!user?.id) {
           addDebugInfo('Utilisateur non connecté');
-          return; // Attendre que l'utilisateur soit chargé
+          return;
         }
 
         addDebugInfo('Début du traitement du paiement');
@@ -46,7 +68,7 @@ const PaymentSuccess = () => {
           'Abonnement premium activé avec succès !' : 
           'Tokens ajoutés avec succès !');
         
-        await checkUser(); // Recharger les données utilisateur une seule fois
+        await checkUser();
         setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err) {
         console.error('Erreur:', err);
@@ -57,8 +79,10 @@ const PaymentSuccess = () => {
       }
     };
 
-    handlePayment();
-  }, [sessionId, planId, user?.id]); // Dépendre uniquement de user.id au lieu de user entier
+    if (user?.id) {
+      handlePayment();
+    }
+  }, [sessionId, planId, user?.id]);
 
   return (
     <div className="min-h-screen p-8">

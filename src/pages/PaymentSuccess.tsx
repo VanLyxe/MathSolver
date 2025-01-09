@@ -17,7 +17,7 @@ const PaymentSuccess = () => {
   const planId = urlParams.get('plan_id')?.split('?')[0];
 
   const addLog = (message: string) => {
-    console.log(message); // Pour le débogage console
+    console.log(message);
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
@@ -30,12 +30,35 @@ const PaymentSuccess = () => {
       try {
         addLog('Initialisation du processus de paiement');
         
-        // Vérifier la session
+        // Récupérer la session
         const { data: { session } } = await supabase.auth.getSession();
+        
+        // Si pas de session, tenter de restaurer avec le hash de l'URL
         if (!session) {
-          addLog('Pas de session active, tentative de restauration...');
-          await supabase.auth.refreshSession();
-          await checkUser();
+          addLog('Tentative de restauration de la session...');
+          
+          // Récupérer le hash de l'URL s'il existe
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            addLog('Tokens trouvés, restauration de la session...');
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+            
+            if (error) throw error;
+            if (data.session) {
+              addLog('Session restaurée avec succès');
+              await checkUser();
+            }
+          } else {
+            addLog('Tentative de rafraîchissement de la session...');
+            await supabase.auth.refreshSession();
+            await checkUser();
+          }
         }
 
         // Vérifier les paramètres
@@ -46,15 +69,15 @@ const PaymentSuccess = () => {
         addLog(`Plan: ${planId}`);
 
         // Vérifier l'utilisateur
-        if (!user?.id) {
-          addLog('Utilisateur non connecté');
-          return;
+        const currentUser = await supabase.auth.getUser();
+        if (!currentUser.data.user) {
+          throw new Error('Utilisateur non connecté');
         }
         addLog('Utilisateur connecté');
 
         // Traiter le paiement
         addLog('Traitement du paiement...');
-        await subscriptionService.handlePaymentSuccess(user.id, planId);
+        await subscriptionService.handlePaymentSuccess(currentUser.data.user.id, planId);
         
         // Mettre à jour l'utilisateur
         addLog('Mise à jour des informations utilisateur');

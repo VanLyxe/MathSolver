@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { PAYMENT_PLANS } from '../constants/pricing';
 import PlanCard from '../components/pricing/PlanCard';
 import { ArrowLeft } from 'lucide-react';
@@ -59,6 +59,16 @@ const PricingPage: React.FC = () => {
             />
           ))}
         </div>
+
+        <p className="text-center text-sm text-gray-600 mt-8">
+          En effectuant un achat, vous acceptez nos{' '}
+          <Link 
+            to="/legal/terms-of-sale"
+            className="text-purple-600 hover:text-purple-700 underline"
+          >
+            conditions générales de vente
+          </Link>
+        </p>
       </div>
     </div>
   );

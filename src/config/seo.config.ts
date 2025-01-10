@@ -1,6 +1,6 @@
 export const SEO_CONFIG = {
   siteName: 'MathSolver',
-  baseUrl: 'https://mathsolver.fr',
+  baseUrl: 'https://math-solver.xyz',
   defaultImage: '/og-image.jpg',
   defaultLocale: 'fr_FR',
   social: {

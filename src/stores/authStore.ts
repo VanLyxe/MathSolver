@@ -28,6 +28,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
+      // Vérifier si l'email est confirmé
+      if (!session.user.email_confirmed_at) {
+        set({ user: null, loading: false });
+        return;
+      }
+
       const { data: userData, error: dbError } = await supabase
         .from('users')
         .select('subscription_type, tokens_remaining')
@@ -63,6 +69,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
 
       if (data.user) {
+        if (!data.user.email_confirmed_at) {
+          throw new Error('Veuillez confirmer votre adresse email avant de vous connecter');
+        }
+
         const { user: dbUser, error: dbError } = await authService.getUser(data.user.id);
         if (dbError) throw dbError;
         
@@ -84,26 +94,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        const { user: dbUser, error: dbError } = await authService.createUser(
-          data.user.id,
-          email
-        );
-        
-        if (dbError) throw dbError;
-
-        set({ 
-          user: {
-            ...data.user,
-            subscription_type: dbUser?.subscription_type,
-            tokens_remaining: dbUser?.tokens_remaining
-          }
-        });
+        toast.success('Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte de réception.');
+        return;
       }
     } catch (error: any) {
       console.error('Sign up error:', error);

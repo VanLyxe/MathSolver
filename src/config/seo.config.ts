@@ -8,6 +8,6 @@ export const SEO_CONFIG = {
     facebook: 'mathsolver'
   },
   analytics: {
-    googleAnalyticsId: 'G-XXXXXXXXXX'
+    googleAnalyticsId: 'G-PE8GCN1R3F' // Remplacez par votre ID Google Analytics
   }
 };

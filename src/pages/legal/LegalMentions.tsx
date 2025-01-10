@@ -9,20 +9,20 @@ const LegalMentions = () => {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Éditeur du site</h2>
           <p className="text-gray-600">
-            MathSolver est édité par [Nom de la société]<br />
-            Siège social : [Adresse]<br />
-            SIRET : [Numéro SIRET]<br />
-            Capital social : [Montant]<br />
-            Directeur de la publication : [Nom du directeur]
+            MathSolver est édité par VanLyxe Corp<br />
+            Siège social : 12 rue du nord 68000 Colmar<br />
+            SIRET : 905 234 548<br />
+            Capital social : 0<br />
+            Directeur de la publication : Julien BERGE
           </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Hébergement</h2>
           <p className="text-gray-600">
-            Le site est hébergé par [Nom de l'hébergeur]<br />
-            Adresse : [Adresse de l'hébergeur]<br />
-            Contact : [Contact de l'hébergeur]
+            Le site est hébergé par Netlify<br />
+            Adresse : 2325 3RD STREET,SUITE 215, SAN FRANCISCO, CA 94107 (USA)<br />
+            Contact : privacy@netlify.com
           </p>
         </section>
 
@@ -38,8 +38,8 @@ const LegalMentions = () => {
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Contact</h2>
           <p className="text-gray-600">
             Pour toute question concernant le site, vous pouvez nous contacter :<br />
-            Email : contact@mathsolver.fr<br />
-            Téléphone : [Numéro de téléphone]
+            Email : vanlyxe@gmail.com<br />
+            Téléphone : 06
           </p>
         </section>
       </div>

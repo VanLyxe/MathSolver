@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://mathsolver.fr/</loc>
+    <loc>https://math-solver.xyz/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://mathsolver.fr/pricing</loc>
+    <loc>https://math-solver.xyz/pricing</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mathsolver.fr/about</loc>
+    <loc>https://math-solver.xyz/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mathsolver.fr/help/faq</loc>
+    <loc>https://math-solver.xyz/help/faq</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mathsolver.fr/help/contact</loc>
+    <loc>https://math-solver.xyz/help/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

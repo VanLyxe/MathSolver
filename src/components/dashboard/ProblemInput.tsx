@@ -3,6 +3,8 @@ import { useProblemSolver } from '../../hooks/useProblemSolver';
 import ImageUpload from './ImageUpload';
 import MathDisplay from './MathDisplay';
 import ProgressBar from '../ProgressBar';
+import NoTokensModal from './NoTokensModal';
+import { useTokens } from '../../hooks/useTokens';
 import toast from 'react-hot-toast';
 
 const ProblemInput: React.FC = () => {
@@ -10,7 +12,9 @@ const ProblemInput: React.FC = () => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [solution, setSolution] = useState('');
   const [progress, setProgress] = useState(0);
+  const [showNoTokensModal, setShowNoTokensModal] = useState(false);
   const { solveProblem, isLoading } = useProblemSolver();
+  const { tokens } = useTokens();
 
   useEffect(() => {
     let progressInterval: NodeJS.Timeout;
@@ -45,6 +49,11 @@ const ProblemInput: React.FC = () => {
       if (result?.solution) {
         setSolution(result.solution);
         toast.success('Problème résolu !');
+        
+        // Vérifier les tokens après la résolution
+        if (tokens <= 1) { // <= 1 car le token sera décrémenté après la résolution
+          setShowNoTokensModal(true);
+        }
       }
     } catch (error) {
       console.error('Erreur lors de la résolution:', error);
@@ -92,6 +101,11 @@ const ProblemInput: React.FC = () => {
       </div>
 
       {solution && <MathDisplay solution={solution} />}
+      
+      <NoTokensModal 
+        isOpen={showNoTokensModal} 
+        onClose={() => setShowNoTokensModal(false)} 
+      />
     </div>
   );
 };

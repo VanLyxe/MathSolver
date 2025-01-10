@@ -49,7 +49,7 @@ export const useProblemSolver = () => {
         throw new TokenError('NO_TOKENS', 'Vous n\'avez plus de tokens disponibles');
       }
 
-      // Créer le problème
+      // Créer le problème dans la base de données
       const { problem, error: createError } = await problemService.createProblem(
         user.id,
         problemText || 'Problème soumis via image',
@@ -64,9 +64,6 @@ export const useProblemSolver = () => {
         throw new SolverError('UNKNOWN_ERROR', 'Erreur lors de la création du problème');
       }
 
-      // Décrémenter les tokens
-      await tokenService.decrementTokens(user.id);
-
       // Résoudre avec OpenAI
       const solution = await openaiService.solveMathProblem(problemText, imageUrl);
 
@@ -77,6 +74,9 @@ export const useProblemSolver = () => {
       if (updateError) {
         throw new SolverError('STORAGE_ERROR', 'Erreur lors de la mise à jour de la solution');
       }
+
+      // Une fois la solution obtenue et sauvegardée, décrémenter le token
+      await tokenService.decrementTokens(user.id);
 
       toast.success('Problème résolu avec succès !');
       return updatedProblem;

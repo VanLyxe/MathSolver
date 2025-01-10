@@ -24,25 +24,16 @@ export class TokenService {
 
   async decrementTokens(userId: string): Promise<void> {
     try {
-      const currentTokens = await this.getUserTokens(userId);
-      
-      if (currentTokens <= 0) {
-        throw new TokenError('NO_TOKENS', 'Vous n\'avez plus de tokens disponibles');
-      }
-
-      const { data, error } = await supabase.rpc('decrement_tokens');
+      const { error } = await supabase.rpc('decrement_tokens');
       
       if (error) {
         throw new TokenError('UPDATE_ERROR', 'Impossible de mettre à jour les tokens');
       }
-      
-      if (data === 0) {
-        throw new TokenError('NO_TOKENS', 'Plus de tokens disponibles');
-      }
 
       // Mettre à jour le store avec le nouveau nombre de tokens
+      const currentTokens = await this.getUserTokens(userId);
       const { updateUserTokens } = useAuthStore.getState();
-      await updateUserTokens(currentTokens - 1);
+      await updateUserTokens(currentTokens);
     } catch (error) {
       if (error instanceof TokenError) throw error;
       throw new TokenError('UNKNOWN_ERROR', 'Une erreur inattendue est survenue');

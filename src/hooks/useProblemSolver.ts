@@ -75,10 +75,11 @@ export const useProblemSolver = () => {
         throw new SolverError('STORAGE_ERROR', 'Erreur lors de la mise à jour de la solution');
       }
 
-      // Une fois la solution obtenue et sauvegardée, décrémenter le token
+      toast.success('Problème résolu avec succès !');
+
+      // Décrémenter le token seulement après avoir affiché le message de succès
       await tokenService.decrementTokens(user.id);
 
-      toast.success('Problème résolu avec succès !');
       return updatedProblem;
 
     } catch (error) {

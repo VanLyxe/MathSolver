@@ -26,12 +26,14 @@ import BreadcrumbSchema from './components/BreadcrumbSchema';
 import LocalBusiness from './components/LocalBusiness';
 import { setupPerformanceOptimizations } from './utils/performance.utils';
 import SEOProvider from './components/SEOProvider';
+import { initAnalytics } from './utils/analytics.utils';
 
 const App: React.FC = () => {
   useEffect(() => {
     const { lazyLoadImages, preloadCriticalAssets } = setupPerformanceOptimizations();
     preloadCriticalAssets(['/fonts/inter-var.woff2', '/css/critical.css']);
     lazyLoadImages();
+    initAnalytics(); // Initialisation de Google Analytics
   }, []);
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useAuth } from '../hooks/useAuth';
 import PasswordRequirements from '../components/auth/PasswordRequirements';
@@ -13,10 +13,19 @@ const Auth = () => {
   const { signIn, signUp } = useAuthStore();
   const { redirectIfAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     redirectIfAuthenticated();
-  }, [redirectIfAuthenticated]);
+
+    // Vérifier si l'utilisateur vient de confirmer son email
+    const error = searchParams.get('error');
+    const error_description = searchParams.get('error_description');
+    
+    if (error) {
+      toast.error(error_description || 'Une erreur est survenue');
+    }
+  }, [redirectIfAuthenticated, searchParams]);
 
   const validatePassword = () => {
     const requirements = [
@@ -41,12 +50,14 @@ const Auth = () => {
 
       if (isLogin) {
         await signIn(email, password);
+        navigate('/dashboard');
       } else {
         await signUp(email, password);
+        // Ne pas rediriger, attendre la confirmation email
+        setIsLogin(true);
       }
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error('Une erreur est survenue');
+    } catch (error: any) {
+      toast.error(error.message || 'Une erreur est survenue');
     } finally {
       setIsLoading(false);
     }

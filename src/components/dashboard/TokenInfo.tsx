@@ -20,9 +20,14 @@ const TokenInfo = () => {
         <div className="text-3xl font-bold text-purple-600 mb-2">{tokens}</div>
       )}
       
-      <p className="text-sm text-gray-600">
-        Tokens restants pour résoudre vos problèmes
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-gray-600">
+          Tokens restants pour résoudre vos problèmes
+        </p>
+        <p className="text-xs text-gray-500">
+          5 tokens = 2.99€
+        </p>
+      </div>
       
       <button 
         onClick={() => navigate('/pricing')}

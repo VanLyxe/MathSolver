@@ -13,18 +13,14 @@ const BreadcrumbSchema: React.FC = () => {
       {
         '@type': 'ListItem',
         position: 1,
-        item: {
-          '@id': 'https://math-solver.xyz/',
-          name: 'Accueil'
-        }
+        name: 'Accueil',
+        item: 'https://math-solver.xyz/'
       },
       ...pathSegments.map((segment, index) => ({
         '@type': 'ListItem',
         position: index + 2,
-        item: {
-          '@id': `https://math-solver.xyz/${pathSegments.slice(0, index + 1).join('/')}`,
-          name: formatSegmentName(segment)
-        }
+        name: formatSegmentName(segment),
+        item: `https://math-solver.xyz/${pathSegments.slice(0, index + 1).join('/')}`
       }))
     ]
   };

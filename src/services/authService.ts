@@ -24,14 +24,14 @@ export const authService = {
         return { user: existingUser, error: null };
       }
 
-      // Créer l'utilisateur avec 1 token initial
+      // Créer l'utilisateur avec 3 tokens initiaux
       const { data, error } = await supabase
         .from('users')
         .insert([
           {
             id: userId,
             email,
-            tokens_remaining: 1,
+            tokens_remaining: 3, // Modifié de 1 à 3
             subscription_type: 'free'
           }
         ])

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mathsolver.fr/sitemap.xml
+Sitemap: https://math-solver.xyz/public/sitemap.xml

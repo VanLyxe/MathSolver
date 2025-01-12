@@ -34,8 +34,20 @@ const LegalMentions = () => {
           </p>
         </section>
 
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Publicité et Annonces</h2>
+          <p className="text-gray-600">
+            Ce site utilise les services suivants pour la diffusion de publicités :<br />
+            - Google AdSense : service de publicité proposé par Google qui permet l'affichage de publicités ciblées<br />
+            - Google Ads : plateforme publicitaire de Google pour le suivi des conversions et la diffusion d'annonces<br /><br />
+            Ces services peuvent utiliser des cookies pour diffuser des annonces pertinentes et mesurer leur performance. 
+            Pour plus d'informations sur l'utilisation des cookies et la protection de vos données, veuillez consulter notre 
+            politique de confidentialité et notre politique des cookies.
+          </p>
+        </section>
+
         <section>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Contact</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Contact</h2>
           <p className="text-gray-600">
             Pour toute question concernant le site, vous pouvez nous contacter :<br />
             Email : vanlyxe@gmail.com<br />

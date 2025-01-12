@@ -1,32 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Play } from 'lucide-react';
+import { Coins } from 'lucide-react';
 import { useTokens } from '../../hooks/useTokens';
-import { useAdRewards } from '../../hooks/useAdRewards';
-import toast from 'react-hot-toast';
 
 const TokenInfo = () => {
   const { tokens, loading } = useTokens();
   const navigate = useNavigate();
-  const [isLoadingAd, setIsLoadingAd] = useState(false);
-  const { canWatchAd, watchAd, remainingAdsToday } = useAdRewards();
-
-  const handleWatchAd = async () => {
-    if (!canWatchAd) {
-      toast.error('Vous avez atteint la limite de publicités pour aujourd\'hui');
-      return;
-    }
-
-    setIsLoadingAd(true);
-    try {
-      await watchAd();
-      toast.success('Token obtenu !');
-    } catch (error) {
-      toast.error('Erreur lors du chargement de la publicité');
-    } finally {
-      setIsLoadingAd(false);
-    }
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
@@ -50,33 +29,12 @@ const TokenInfo = () => {
         </p>
       </div>
       
-      <div className="mt-4 space-y-2">
-        <button 
-          onClick={() => navigate('/pricing')}
-          className="w-full bg-purple-100 text-purple-600 py-2 rounded-lg hover:bg-purple-200 transition-colors"
-        >
-          Acheter des tokens
-        </button>
-
-        <button
-          onClick={handleWatchAd}
-          disabled={!canWatchAd || isLoadingAd}
-          className={`w-full flex items-center justify-center space-x-2 py-2 rounded-lg transition-colors ${
-            canWatchAd 
-              ? 'bg-green-100 text-green-600 hover:bg-green-200'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          <Play className="h-4 w-4" />
-          <span>
-            {isLoadingAd 
-              ? 'Chargement...' 
-              : canWatchAd 
-                ? 'Regarder une pub (+1 token)' 
-                : `Maximum atteint (${remainingAdsToday}/5)`}
-          </span>
-        </button>
-      </div>
+      <button 
+        onClick={() => navigate('/pricing')}
+        className="mt-4 w-full bg-purple-100 text-purple-600 py-2 rounded-lg hover:bg-purple-200 transition-colors"
+      >
+        Acheter des tokens
+      </button>
     </div>
   );
 };
